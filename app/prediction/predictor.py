@@ -77,16 +77,16 @@ class EnergyPredictor:
     def train_model(self, hours_back=168):
         """Train RandomForest model on historical data"""
         
-        print("🤖 Starting ML model training...")
+        print("Starting ML model training...")
         
         # Prepare data
         df, error = self.prepare_training_data(hours_back)
         
         if error:
-            print(f"❌ Training failed: {error}")
+            print(f"Training failed: {error}")
             return False, error
         
-        print(f"✅ Prepared {len(df)} training samples")
+        print(f"Prepared {len(df)} training samples")
         
         # Features and target
         feature_columns = ['hour', 'day_of_week', 'is_weekend', 
@@ -109,7 +109,7 @@ class EnergyPredictor:
             n_jobs=-1
         )
         
-        print("🔄 Training RandomForest model...")
+        print("Training RandomForest model...")
         self.model.fit(X_train, y_train)
         
         # Evaluate
@@ -117,9 +117,9 @@ class EnergyPredictor:
         mae = mean_absolute_error(y_test, y_pred)
         r2 = r2_score(y_test, y_pred)
         
-        print(f"✅ Model trained successfully!")
-        print(f"📊 Mean Absolute Error: {mae:.2f} kW")
-        print(f"📊 R² Score: {r2:.4f}")
+        print(f" Model trained successfully!")
+        print(f" Mean Absolute Error: {mae:.2f} kW")
+        print(f" R² Score: {r2:.4f}")
         
         # Save model
         self.save_model()
@@ -137,7 +137,7 @@ class EnergyPredictor:
         os.makedirs(os.path.dirname(self.model_path), exist_ok=True)
         with open(self.model_path, 'wb') as f:
             pickle.dump(self.model, f)
-        print(f"💾 Model saved to {self.model_path}")
+        print(f" Model saved to {self.model_path}")
     
     def load_model(self):
         """Load trained model from disk"""
@@ -145,7 +145,7 @@ class EnergyPredictor:
             with open(self.model_path, 'rb') as f:
                 self.model = pickle.load(f)
             self.is_trained = True
-            print(f"✅ Model loaded from {self.model_path}")
+            print(f" Model loaded from {self.model_path}")
             return True
         return False
     

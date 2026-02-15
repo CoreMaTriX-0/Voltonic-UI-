@@ -104,5 +104,5 @@ class IoTSimulator:
         
         db.session.commit()
         
-        print(f"⚡ Simulated {logs_created} rooms | ✅ Optimized {optimizations_applied} rooms at {current_time.strftime('%H:%M:%S')}")
+        print(f" Simulated {logs_created} rooms | Optimized {optimizations_applied} rooms at {current_time.strftime('%H:%M:%S')}")
         return logs_created, optimizations_applied

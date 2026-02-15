@@ -17,41 +17,41 @@ class PredictionTester:
     def run_comprehensive_tests(self):
         """Run all test scenarios"""
         print("\n" + "="*70)
-        print("🧪 VOLTONIC - ML Model Testing Suite")
+        print(" VOLTONIC - ML Model Testing Suite")
         print("="*70 + "\n")
         
         # Test 1: Check data availability
-        print("📊 Test 1: Data Availability Check")
+        print(" Test 1: Data Availability Check")
         data_check = self._test_data_availability()
-        print(f"✅ Result: {data_check}\n")
+        print(f" Result: {data_check}\n")
         
         # Test 2: Train model
-        print("🤖 Test 2: Model Training")
+        print(" Test 2: Model Training")
         training_result = self._test_model_training()
-        print(f"✅ Training completed: {training_result}\n")
+        print(f" Training completed: {training_result}\n")
         
         # Test 3: Feature importance
-        print("🎯 Test 3: Feature Importance Analysis")
+        print(" Test 3: Feature Importance Analysis")
         self._test_feature_importance()
         print()
         
         # Test 4: Single prediction
-        print("🔮 Test 4: Single Hour Prediction")
+        print(" Test 4: Single Hour Prediction")
         self._test_single_prediction()
         print()
         
         # Test 5: Multiple hour predictions
-        print("📈 Test 5: Multi-Hour Prediction Accuracy")
+        print(" Test 5: Multi-Hour Prediction Accuracy")
         self._test_rolling_predictions(hours=24)
         print()
         
         # Test 6: Peak vs Off-Peak accuracy
-        print("⚡ Test 6: Peak vs Off-Peak Hour Accuracy")
+        print(" Test 6: Peak vs Off-Peak Hour Accuracy")
         self._test_peak_vs_offpeak()
         print()
         
         # Test 7: Weekday vs Weekend accuracy
-        print("📅 Test 7: Weekday vs Weekend Accuracy")
+        print(" Test 7: Weekday vs Weekend Accuracy")
         self._test_weekday_vs_weekend()
         print()
         
@@ -59,7 +59,7 @@ class PredictionTester:
         self._generate_test_report()
         
         print("="*70)
-        print("✅ All tests completed!")
+        print(" All tests completed!")
         print("="*70 + "\n")
     
     def _test_data_availability(self):
@@ -67,7 +67,7 @@ class PredictionTester:
         total_logs = EnergyLog.query.count()
         
         if total_logs == 0:
-            return "❌ No data available"
+            return " No data available"
         
         # Check time range
         earliest = db.session.query(db.func.min(EnergyLog.timestamp)).scalar()
@@ -80,16 +80,16 @@ class PredictionTester:
         print(f"  • Hours covered: {time_range:.1f}")
         
         if total_logs < 100:
-            return "⚠️  Insufficient data (need at least 100 logs)"
+            return "  Insufficient data (need at least 100 logs)"
         
-        return f"✅ Sufficient data ({total_logs:,} logs, {time_range:.1f} hours)"
+        return f" Sufficient data ({total_logs:,} logs, {time_range:.1f} hours)"
     
     def _test_model_training(self):
         """Test 2: Train the model"""
         success, result = self.predictor.train_model(hours_back=168)
         
         if not success:
-            print(f"  ❌ Training failed: {result}")
+            print(f"   Training failed: {result}")
             return False
         
         print(f"  • MAE: {result['mae']} kW")
@@ -110,7 +110,7 @@ class PredictionTester:
         importance, error = self.predictor.get_feature_importance()
         
         if error:
-            print(f"  ❌ {error}")
+            print(f"   {error}")
             return
         
         print("  Feature Importance Ranking:")
@@ -123,7 +123,7 @@ class PredictionTester:
         prediction, error = self.predictor.predict_next_hour()
         
         if error:
-            print(f"  ❌ {error}")
+            print(f"   {error}")
             return
         
         print(f"  • Current load: {prediction['current_load_kw']} kW")
@@ -152,7 +152,7 @@ class PredictionTester:
         ).group_by(EnergyLog.timestamp).order_by(EnergyLog.timestamp).all()
         
         if len(actual_loads) < 2:
-            print("  ⚠️  Not enough historical data for rolling predictions")
+            print("   Not enough historical data for rolling predictions")
             return
         
         predictions = []
@@ -371,7 +371,7 @@ class PredictionTester:
         with open('prediction_test_report.json', 'w') as f:
             json.dump(report, f, indent=2)
         
-        print(f"\n📄 Test report saved to: prediction_test_report.json")
+        print(f"\n Test report saved to: prediction_test_report.json")
 
 def run_prediction_tests():
     """Main function to run all tests"""

@@ -16,9 +16,14 @@ def create_app():
     db.init_app(app)
     CORS(app)
     
+    # Register blueprints
+    from app.api import api_bp
+    app.register_blueprint(api_bp)
+    
     # Create database tables
     with app.app_context():
         db.create_all()
-        print("✅ Database tables created")
+        print(" Database tables created")
+        print(" API endpoints registered at /api")
     
     return app

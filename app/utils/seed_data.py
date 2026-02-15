@@ -5,7 +5,7 @@ from app.models import db, Faculty, Building, Floor, Room, Timetable
 def seed_campus():
     """Generate complete campus structure with 1260 rooms"""
     
-    print("🌱 Seeding campus data...")
+    print(" Seeding campus data...")
     
     # Faculty names
     faculty_names = [
@@ -20,7 +20,7 @@ def seed_campus():
         db.session.add(faculty)
         db.session.flush()
         
-        print(f"  ✅ Created {fac_name}")
+        print(f"   Created {fac_name}")
         
         # 3 Buildings per faculty
         for bld_idx in range(1, 4):
@@ -80,11 +80,11 @@ def seed_campus():
     
     # Count verification
     total_rooms = Room.query.count()
-    print(f"\n✅ Campus seeded successfully!")
-    print(f"📊 Total Rooms: {total_rooms}")
-    print(f"📊 Faculties: {Faculty.query.count()}")
-    print(f"📊 Buildings: {Building.query.count()}")
-    print(f"📊 Floors: {Floor.query.count()}")
+    print(f"\n Campus seeded successfully!")
+    print(f" Total Rooms: {total_rooms}")
+    print(f" Faculties: {Faculty.query.count()}")
+    print(f" Buildings: {Building.query.count()}")
+    print(f" Floors: {Floor.query.count()}")
 
 def create_timetable(room_id, room_type):
     """Create realistic timetables for rooms"""

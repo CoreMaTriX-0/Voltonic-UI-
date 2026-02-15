@@ -16,7 +16,7 @@ class HistoricalDataGenerator:
             days_back: Number of days to generate data for
             interval_minutes: Time interval between logs (default 60 min)
         """
-        print(f"\n🔄 Generating {days_back} days of historical data...\n")
+        print(f"\n Generating {days_back} days of historical data...\n")
         
         rooms = Room.query.all()
         total_rooms = len(rooms)
@@ -75,15 +75,15 @@ class HistoricalDataGenerator:
             # Progress update
             if total_iterations % 24 == 0:
                 days_completed = total_iterations / 24
-                print(f"✅ Generated {days_completed:.1f} days | {total_logs:,} logs | Latest: {current_time.strftime('%Y-%m-%d %H:%M')}")
+                print(f" Generated {days_completed:.1f} days | {total_logs:,} logs | Latest: {current_time.strftime('%Y-%m-%d %H:%M')}")
             
             # Move to next interval
             current_time += timedelta(minutes=interval_minutes)
         
-        print(f"\n✅ Historical data generation complete!")
-        print(f"📊 Total logs created: {total_logs:,}")
-        print(f"📊 Time range: {start_time.strftime('%Y-%m-%d %H:%M')} to {end_time.strftime('%Y-%m-%d %H:%M')}")
-        print(f"📊 Total rooms: {total_rooms}")
+        print(f"\n Historical data generation complete!")
+        print(f" Total logs created: {total_logs:,}")
+        print(f" Time range: {start_time.strftime('%Y-%m-%d %H:%M')} to {end_time.strftime('%Y-%m-%d %H:%M')}")
+        print(f" Total rooms: {total_rooms}")
         
         return total_logs
 
@@ -94,17 +94,17 @@ def generate_historical_data_command(days=7):
     
     with app.app_context():
         print("\n" + "="*60)
-        print("⚡ VOLTONIC - Historical Data Generator")
+        print(" VOLTONIC - Historical Data Generator")
         print("="*60)
         
         # Check existing data
         existing_logs = EnergyLog.query.count()
-        print(f"\n📊 Existing logs in database: {existing_logs:,}")
+        print(f"\n Existing logs in database: {existing_logs:,}")
         
         if existing_logs > 0:
-            response = input("\n⚠️  Database contains existing logs. Continue? (yes/no): ")
+            response = input("\n  Database contains existing logs. Continue? (yes/no): ")
             if response.lower() != 'yes':
-                print("❌ Operation cancelled.")
+                print(" Operation cancelled.")
                 return
         
         # Generate data
