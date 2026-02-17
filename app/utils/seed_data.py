@@ -9,7 +9,7 @@ def seed_energy_sources():
     # Grid electricity - primary source
     grid = EnergySource(
         name="grid",
-        cost_per_kwh=1.0,  # $1/kWh
+        cost_per_kwh=8.0,  # ₹8/kWh
         is_available=True,
         priority=1
     )
@@ -18,7 +18,7 @@ def seed_energy_sources():
     # Solar + Battery - backup for classrooms/staff
     solar = EnergySource(
         name="solar",
-        cost_per_kwh=0.5,  # $0.5/kWh
+        cost_per_kwh=4.0,  # ₹4/kWh
         is_available=True,
         priority=2
     )
@@ -27,7 +27,7 @@ def seed_energy_sources():
     # Diesel Generator - backup for labs/Smart_Class
     diesel = EnergySource(
         name="diesel",
-        cost_per_kwh=2.0,  # $2/kWh
+        cost_per_kwh=16.0,  # ₹16/kWh
         is_available=True,
         priority=3
     )
@@ -42,7 +42,7 @@ def seed_energy_sources():
     db.session.add(grid_status)
     
     db.session.commit()
-    print(f"   Created 3 energy sources: grid ($1/kWh), solar ($0.5/kWh), diesel ($2/kWh)")
+    print(f"   Created 3 energy sources: grid (₹8/kWh), solar (₹4/kWh), diesel (₹16/kWh)")
 
 def seed_campus():
     """Generate complete campus structure with rooms and Smart_Classes"""

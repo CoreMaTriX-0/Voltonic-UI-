@@ -37,7 +37,7 @@ function EnergyFlowDiagram() {
 
   const fetchEnergyFlow = async () => {
     if (!selectedBuilding) return;
-    
+
     try {
       const response = await dashboardAPI.getBuildingEnergyFlow(selectedBuilding);
       setEnergyFlow(response.data.data);
@@ -47,16 +47,16 @@ function EnergyFlowDiagram() {
   };
 
   const getSourceColor = (source) => {
-    switch(source) {
-      case 'grid': return '#10b981'; // green
-      case 'solar': return '#f59e0b'; // amber
-      case 'diesel': return '#ef4444'; // red
-      default: return '#6b7280'; // gray
+    switch (source) {
+      case 'grid': return 'var(--secondary)'; // green
+      case 'solar': return 'var(--accent-yellow)'; // yellow
+      case 'diesel': return 'var(--danger)'; // red
+      default: return 'var(--text-muted)'; // gray
     }
   };
 
   const getTypeIcon = (type) => {
-    switch(type) {
+    switch (type) {
       case 'classroom': return '📚';
       case 'lab': return '🔬';
       case 'staff': return '👔';
@@ -74,7 +74,10 @@ function EnergyFlowDiagram() {
   return (
     <div className="energy-flow-container">
       <div className="flow-header">
-        <h2>🔋 Energy Flow Visualization</h2>
+        <h2>
+          <span style={{ marginRight: '0.5rem' }}>🔋</span>
+          Energy Flow Visualization
+        </h2>
         <div className="building-selector">
           <label>Building: </label>
           <select
@@ -103,16 +106,16 @@ function EnergyFlowDiagram() {
         <h4>Energy Sources:</h4>
         <div className="legend-items">
           <div className="legend-item">
-            <span className="legend-color" style={{backgroundColor: '#10b981'}}></span>
-            <span>Grid ($1/kWh)</span>
+            <span className="legend-color" style={{ backgroundColor: 'var(--secondary)' }}></span>
+            <span>Grid (₹8/kWh)</span>
           </div>
           <div className="legend-item">
-            <span className="legend-color" style={{backgroundColor: '#f59e0b'}}></span>
-            <span>Solar ($0.5/kWh)</span>
+            <span className="legend-color" style={{ backgroundColor: 'var(--accent-yellow)' }}></span>
+            <span>Solar (₹4/kWh)</span>
           </div>
           <div className="legend-item">
-            <span className="legend-color" style={{backgroundColor: '#ef4444'}}></span>
-            <span>Diesel ($2/kWh)</span>
+            <span className="legend-color" style={{ backgroundColor: 'var(--danger)' }}></span>
+            <span>Diesel (₹16/kWh)</span>
           </div>
         </div>
       </div>
@@ -120,7 +123,7 @@ function EnergyFlowDiagram() {
       <div className="floors-container">
         {energyFlow.floors.map(floor => (
           <div key={floor.floor_id} className="floor-section">
-            <div 
+            <div
               className="floor-header"
               onClick={() => setSelectedFloor(selectedFloor === floor.floor_id ? null : floor.floor_id)}
             >
@@ -134,8 +137,8 @@ function EnergyFlowDiagram() {
             {selectedFloor === floor.floor_id && (
               <div className="rooms-grid">
                 {floor.rooms.map(room => (
-                  <div 
-                    key={room.room_id} 
+                  <div
+                    key={room.room_id}
                     className={`room-card ${room.occupancy ? 'occupied' : 'vacant'}`}
                     style={{
                       borderLeft: `4px solid ${getSourceColor(room.energy_source)}`
@@ -145,7 +148,7 @@ function EnergyFlowDiagram() {
                       <span className="room-icon">{getTypeIcon(room.room_type)}</span>
                       <span className="room-name">{room.room_name}</span>
                     </div>
-                    
+
                     <div className="room-details">
                       <div className="detail-row">
                         <span>Type:</span>
@@ -161,11 +164,11 @@ function EnergyFlowDiagram() {
                       </div>
                       <div className="detail-row">
                         <span>Source:</span>
-                        <span 
+                        <span
                           className="source-badge"
                           style={{
                             backgroundColor: getSourceColor(room.energy_source),
-                            color: 'white',
+                            color: 'var(--bg-primary)',
                             padding: '2px 8px',
                             borderRadius: '4px',
                             fontSize: '0.85em'
@@ -187,7 +190,7 @@ function EnergyFlowDiagram() {
 
                     <div className="energy-flow-arrow">
                       <div className="arrow">→</div>
-                      <div className="flow-label">${(room.total_load * room.energy_source_cost).toFixed(2)}/h</div>
+                      <div className="flow-label">₹{(room.total_load * room.energy_source_cost).toFixed(2)}/h</div>
                     </div>
                   </div>
                 ))}
@@ -199,21 +202,26 @@ function EnergyFlowDiagram() {
 
       <style jsx>{`
         .energy-flow-container {
-          padding: 20px;
-          background: #1e293b;
-          border-radius: 8px;
+          padding: 1.5rem;
+          background: var(--bg-card);
+          border-radius: 16px;
+          border: 1px solid var(--border-color);
         }
 
         .flow-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 20px;
+          margin-bottom: 1.5rem;
         }
 
         .flow-header h2 {
-          color: #f1f5f9;
+          color: var(--text-primary);
           margin: 0;
+          font-size: 1.25rem;
+          font-weight: 600;
+          display: flex;
+          align-items: center;
         }
 
         .building-selector {
@@ -223,232 +231,257 @@ function EnergyFlowDiagram() {
         }
 
         .building-selector label {
-          color: #94a3b8;
+          color: var(--text-muted);
+          font-size: 0.9rem;
         }
 
         .building-selector select {
-          padding: 8px 12px;
-          background: #334155;
-          border: 1px solid #475569;
-          border-radius: 4px;
-          color: #f1f5f9;
-          font-size: 14px;
+          padding: 0.625rem 1rem;
+          background: var(--bg-secondary);
+          border: 1px solid var(--border-color);
+          border-radius: 8px;
+          color: var(--text-primary);
+          font-size: 0.9rem;
+          transition: all 0.15s ease;
+        }
+
+        .building-selector select:focus {
+          outline: none;
+          border-color: var(--primary);
+          box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
         }
 
         .building-summary {
-          background: #334155;
-          padding: 20px;
-          border-radius: 8px;
-          margin-bottom: 20px;
+          background: var(--bg-secondary);
+          padding: 1.25rem;
+          border-radius: 12px;
+          margin-bottom: 1.25rem;
+          border: 1px solid var(--border-color);
         }
 
         .summary-card h4 {
-          color: #f1f5f9;
-          margin: 0 0 10px 0;
+          color: var(--primary);
+          margin: 0 0 0.75rem 0;
+          font-size: 1.1rem;
         }
 
         .summary-card p {
-          color: #94a3b8;
-          margin: 5px 0;
+          color: var(--text-secondary);
+          margin: 0.375rem 0;
+          font-size: 0.9rem;
         }
 
         .summary-card strong {
-          color: #10b981;
+          color: var(--secondary);
           font-size: 1.1em;
         }
 
         .timestamp {
-          font-size: 0.85em;
-          color: #64748b;
+          font-size: 0.8rem !important;
+          color: var(--text-muted) !important;
         }
 
         .energy-sources-legend {
-          background: #334155;
-          padding: 15px;
-          border-radius: 8px;
-          margin-bottom: 20px;
+          background: var(--bg-secondary);
+          padding: 1rem 1.25rem;
+          border-radius: 12px;
+          margin-bottom: 1.25rem;
+          border: 1px solid var(--border-color);
         }
 
         .energy-sources-legend h4 {
-          color: #f1f5f9;
-          margin: 0 0 10px 0;
+          color: var(--text-primary);
+          margin: 0 0 0.75rem 0;
+          font-size: 0.9rem;
+          font-weight: 500;
         }
 
         .legend-items {
           display: flex;
-          gap: 20px;
+          gap: 1.5rem;
+          flex-wrap: wrap;
         }
 
         .legend-item {
           display: flex;
           align-items: center;
-          gap: 8px;
-          color: #94a3b8;
+          gap: 0.5rem;
+          color: var(--text-secondary);
+          font-size: 0.85rem;
         }
 
         .legend-color {
-          width: 20px;
-          height: 20px;
+          width: 16px;
+          height: 16px;
           border-radius: 4px;
         }
 
         .floors-container {
           display: flex;
           flex-direction: column;
-          gap: 15px;
+          gap: 1rem;
         }
 
         .floor-section {
-          background: #334155;
-          border-radius: 8px;
+          background: var(--bg-secondary);
+          border-radius: 12px;
           overflow: hidden;
+          border: 1px solid var(--border-color);
         }
 
         .floor-header {
-          padding: 15px 20px;
-          background: #475569;
+          padding: 1rem 1.25rem;
+          background: var(--bg-card);
           cursor: pointer;
           display: flex;
           justify-content: space-between;
           align-items: center;
           user-select: none;
+          border-bottom: 1px solid var(--border-color);
+          transition: all 0.15s ease;
         }
 
         .floor-header:hover {
-          background: #526479;
+          background: var(--bg-card-hover);
         }
 
         .floor-header h3 {
-          color: #f1f5f9;
+          color: var(--text-primary);
           margin: 0;
           display: flex;
           align-items: center;
-          gap: 15px;
+          gap: 1rem;
+          font-size: 1rem;
+          font-weight: 500;
         }
 
         .floor-load {
           font-size: 0.9em;
-          color: #10b981;
-          font-weight: normal;
+          color: var(--secondary);
+          font-weight: 600;
         }
 
         .expand-icon {
-          color: #94a3b8;
+          color: var(--text-muted);
+          font-size: 0.85rem;
         }
 
         .rooms-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-          gap: 15px;
-          padding: 20px;
+          grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+          gap: 1rem;
+          padding: 1.25rem;
         }
 
         .room-card {
-          background: #1e293b;
-          border-radius: 8px;
-          padding: 15px;
-          transition: transform 0.2s;
+          background: var(--bg-card);
+          border-radius: 12px;
+          padding: 1rem;
+          transition: all 0.2s ease;
+          border: 1px solid var(--border-color);
         }
 
         .room-card:hover {
           transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+          box-shadow: var(--shadow-lg);
+          border-color: var(--border-light);
         }
 
         .room-card.occupied {
-          background: #1f3a2e;
+          background: var(--gradient-subtle);
         }
 
         .room-header {
           display: flex;
           align-items: center;
-          gap: 8px;
-          margin-bottom: 12px;
+          gap: 0.5rem;
+          margin-bottom: 1rem;
         }
 
         .room-icon {
-          font-size: 1.5em;
+          font-size: 1.25rem;
         }
 
         .room-name {
-          color: #f1f5f9;
+          color: var(--text-primary);
           font-weight: 500;
-          font-size: 0.9em;
+          font-size: 0.9rem;
         }
 
         .room-details {
           display: flex;
           flex-direction: column;
-          gap: 6px;
+          gap: 0.5rem;
         }
 
         .detail-row {
           display: flex;
           justify-content: space-between;
-          font-size: 0.85em;
-          color: #94a3b8;
+          font-size: 0.8rem;
+          color: var(--text-muted);
         }
 
         .room-type-badge {
-          background: #475569;
-          padding: 2px 8px;
+          background: var(--bg-secondary);
+          padding: 0.125rem 0.5rem;
           border-radius: 4px;
-          font-size: 0.9em;
-          color: #e2e8f0;
+          font-size: 0.8rem;
+          color: var(--text-secondary);
         }
 
         .load-value {
-          color: #10b981;
+          color: var(--accent-yellow);
           font-weight: 600;
         }
 
         .status-active {
-          color: #10b981;
+          color: var(--secondary);
         }
 
         .status-idle {
-          color: #64748b;
+          color: var(--text-muted);
         }
 
         .optimized-badge {
-          background: #10b981;
-          color: white;
-          padding: 4px 8px;
-          border-radius: 4px;
-          font-size: 0.75em;
+          background: var(--gradient-primary);
+          color: var(--bg-primary);
+          padding: 0.375rem 0.75rem;
+          border-radius: 6px;
+          font-size: 0.75rem;
           text-align: center;
-          margin-top: 8px;
+          margin-top: 0.75rem;
+          font-weight: 600;
         }
 
         .energy-flow-arrow {
-          margin-top: 10px;
-          padding-top: 10px;
-          border-top: 1px solid #475569;
+          margin-top: 0.75rem;
+          padding-top: 0.75rem;
+          border-top: 1px solid var(--border-color);
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 5px;
+          gap: 0.5rem;
         }
 
         .arrow {
-          color: #10b981;
-          font-size: 1.2em;
+          color: var(--secondary);
+          font-size: 1.1rem;
         }
 
         .flow-label {
-          color: #f59e0b;
+          color: var(--accent-yellow);
           font-weight: 600;
-          font-size: 0.9em;
+          font-size: 0.85rem;
         }
 
         .loading, .error {
-          padding: 40px;
+          padding: 3rem;
           text-align: center;
-          color: #94a3b8;
+          color: var(--text-muted);
         }
 
         .error {
-          color: #ef4444;
+          color: var(--danger);
         }
       `}</style>
     </div>
