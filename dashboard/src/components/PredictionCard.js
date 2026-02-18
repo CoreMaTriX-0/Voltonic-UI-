@@ -8,10 +8,10 @@ function PredictionCard() {
 
   useEffect(() => {
     fetchPrediction();
-    
+
     // Refresh prediction every 5 seconds
     const interval = setInterval(fetchPrediction, 5000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -56,42 +56,61 @@ function PredictionCard() {
   return (
     <div className="card">
       <div className="card-header">
-        <h2 className="card-title">🔮 Next Hour Prediction</h2>
+        <h2 className="card-title">
+          Next Hour Prediction
+        </h2>
         <span className="badge info">ML Powered</span>
       </div>
       <div className="card-body">
         <div className="metric">
           <div className="metric-label">Predicted Load</div>
-          <div className="metric-value large">
+          <div className="metric-value large" style={{ color: 'var(--accent-yellow)' }}>
             {prediction.predicted_load_kw.toFixed(2)}
             <span className="metric-unit">kW</span>
           </div>
         </div>
 
-        <div className="stats-row" style={{ marginTop: '1rem' }}>
+        <div className="stats-row" style={{ marginTop: '1.25rem' }}>
           <div className="stat-box">
-            <div className="stat-box-value">{prediction.current_load_kw.toFixed(2)}</div>
+            <div className="stat-box-value" style={{ color: 'var(--text-secondary)' }}>
+              {prediction.current_load_kw.toFixed(2)}
+            </div>
             <div className="stat-box-label">Current Load</div>
           </div>
           <div className="stat-box">
-            <div className={`stat-box-value ${isIncrease ? 'danger' : 'success'}`}>
-              {isIncrease ? '↑' : '↓'} {percentage}%
+            <div className="stat-box-value" style={{
+              color: isIncrease ? 'var(--danger)' : 'var(--accent-green)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.25rem'
+            }}>
+              <span style={{ fontSize: '1rem' }}>{isIncrease ? '↑' : '↓'}</span>
+              {Math.abs(percentage)}%
             </div>
             <div className="stat-box-label">Change</div>
           </div>
         </div>
 
         {prediction.confidence_interval && (
-          <div style={{ marginTop: '1rem', color: '#94a3b8', fontSize: '0.85rem' }}>
-            <div>Confidence Interval:</div>
-            <div style={{ color: '#cbd5e1' }}>
+          <div style={{
+            marginTop: '1.25rem',
+            padding: '0.75rem 1rem',
+            background: 'var(--bg-secondary)',
+            borderRadius: '8px',
+            border: '1px solid var(--border-color)'
+          }}>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>
+              Confidence Interval
+            </div>
+            <div style={{ color: 'var(--text-primary)', fontWeight: '500' }}>
               {prediction.confidence_interval.lower.toFixed(2)} - {prediction.confidence_interval.upper.toFixed(2)} kW
             </div>
           </div>
         )}
 
         {prediction.prediction_for && (
-          <div style={{ marginTop: '0.5rem', color: '#64748b', fontSize: '0.85rem' }}>
+          <div style={{ marginTop: '1rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
             For: {new Date(prediction.prediction_for).toLocaleString()}
           </div>
         )}

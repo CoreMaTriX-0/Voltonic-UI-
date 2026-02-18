@@ -94,13 +94,16 @@ function CampusStructure() {
       {statistics && (
         <div className="card">
           <div className="card-header">
-            <h2 className="card-title">🗺️ Campus Overview</h2>
+            <h2 className="card-title">
+              <span style={{ fontSize: '1.25rem' }}>🗺️</span>
+              Campus Overview
+            </h2>
             <span className="badge success">Live</span>
           </div>
           <div className="card-body">
             <div className="stats-row">
               <div className="stat-box">
-                <div className="stat-box-value">{statistics.total_faculties}</div>
+                <div className="stat-box-value" style={{ color: 'var(--accent-yellow)' }}>{statistics.total_faculties}</div>
                 <div className="stat-box-label">Faculties</div>
               </div>
               <div className="stat-box">
@@ -108,7 +111,7 @@ function CampusStructure() {
                 <div className="stat-box-label">Buildings</div>
               </div>
               <div className="stat-box">
-                <div className="stat-box-value">{statistics.total_floors}</div>
+                <div className="stat-box-value" style={{ color: 'var(--accent-yellow)' }}>{statistics.total_floors}</div>
                 <div className="stat-box-label">Floors</div>
               </div>
               <div className="stat-box">
@@ -123,7 +126,10 @@ function CampusStructure() {
       {/* Campus Structure Tree */}
       <div className="card" style={{ marginTop: '1.5rem' }}>
         <div className="card-header">
-          <h2 className="card-title">🌳 Campus Hierarchy</h2>
+          <h2 className="card-title">
+            <span style={{ fontSize: '1.25rem' }}>🌳</span>
+            Campus Hierarchy
+          </h2>
         </div>
         <div className="card-body">
           {structure && structure.length > 0 ? (
@@ -185,7 +191,7 @@ function CampusStructure() {
                                 ))}
                               </div>
                               {building.rooms.length > 20 && (
-                                <div style={{ marginTop: '1rem', color: '#64748b', textAlign: 'center' }}>
+                                <div style={{ marginTop: '1rem', color: 'var(--text-muted)', textAlign: 'center' }}>
                                   Showing 20 of {building.rooms.length} rooms
                                 </div>
                               )}
@@ -199,7 +205,7 @@ function CampusStructure() {
               ))}
             </div>
           ) : (
-            <div style={{ color: '#64748b', padding: '2rem', textAlign: 'center' }}>
+            <div style={{ color: 'var(--text-muted)', padding: '2rem', textAlign: 'center' }}>
               No campus structure data available
             </div>
           )}
@@ -212,7 +218,10 @@ function CampusStructure() {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="card">
               <div className="card-header">
-                <h2 className="card-title">📍 {roomDetails.name}</h2>
+                <h2 className="card-title">
+                  <span style={{ fontSize: '1.25rem' }}>📍</span>
+                  {roomDetails.name}
+                </h2>
                 <button 
                   className="btn btn-secondary"
                   onClick={() => setSelectedRoom(null)}
@@ -223,40 +232,40 @@ function CampusStructure() {
               <div className="card-body">
                 <div className="stats-row">
                   <div className="stat-box">
-                    <div className="stat-box-value">{roomDetails.type}</div>
+                    <div className="stat-box-value" style={{ color: 'var(--accent-yellow)', fontSize: '1.1rem' }}>{roomDetails.type}</div>
                     <div className="stat-box-label">Type</div>
                   </div>
                   <div className="stat-box">
-                    <div className="stat-box-value">{roomDetails.capacity}</div>
+                    <div className="stat-box-value" style={{ fontSize: '1.25rem' }}>{roomDetails.capacity}</div>
                     <div className="stat-box-label">Capacity</div>
                   </div>
                   <div className="stat-box">
-                    <div className="stat-box-value">{roomDetails.base_load_kw}</div>
+                    <div className="stat-box-value" style={{ color: 'var(--accent-yellow)', fontSize: '1.25rem' }}>{roomDetails.base_load_kw}</div>
                     <div className="stat-box-label">Base Load (kW)</div>
                   </div>
                 </div>
 
                 <div style={{ marginTop: '1.5rem' }}>
-                  <h3 style={{ color: '#cbd5e1', marginBottom: '0.75rem' }}>Location</h3>
-                  <div style={{ color: '#94a3b8' }}>
-                    <div>Faculty: {roomDetails.faculty.name}</div>
-                    <div>Building: {roomDetails.building.name}</div>
-                    <div>Floor: {roomDetails.floor.number}</div>
+                  <h3 style={{ color: 'var(--text-primary)', marginBottom: '0.75rem', fontSize: '1rem' }}>Location</h3>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                    <div>Faculty: <span style={{ color: 'var(--accent-yellow)' }}>{roomDetails.faculty.name}</span></div>
+                    <div>Building: <span style={{ color: 'var(--text-primary)' }}>{roomDetails.building.name}</span></div>
+                    <div>Floor: <span style={{ color: 'var(--text-primary)' }}>{roomDetails.floor.number}</span></div>
                   </div>
                 </div>
 
                 {roomDetails.latest_reading && (
                   <div style={{ marginTop: '1.5rem' }}>
-                    <h3 style={{ color: '#cbd5e1', marginBottom: '0.75rem' }}>Latest Reading</h3>
+                    <h3 style={{ color: 'var(--text-primary)', marginBottom: '0.75rem', fontSize: '1rem' }}>Latest Reading</h3>
                     <div className="stats-row">
                       <div className="stat-box">
-                        <div className="stat-box-value">
+                        <div className="stat-box-value" style={{ color: 'var(--accent-yellow)', fontSize: '1.25rem' }}>
                           {roomDetails.latest_reading.total_load.toFixed(2)}
                         </div>
                         <div className="stat-box-label">Load (kW)</div>
                       </div>
                       <div className="stat-box">
-                        <div className="stat-box-value">
+                        <div className="stat-box-value" style={{ fontSize: '1.25rem' }}>
                           {roomDetails.latest_reading.temperature.toFixed(1)}°C
                         </div>
                         <div className="stat-box-label">Temperature</div>
@@ -274,7 +283,7 @@ function CampusStructure() {
                         <div className="stat-box-label">Optimized</div>
                       </div>
                     </div>
-                    <div style={{ marginTop: '0.75rem', color: '#64748b', fontSize: '0.85rem' }}>
+                    <div style={{ marginTop: '0.75rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
                       Updated: {new Date(roomDetails.latest_reading.timestamp).toLocaleString()}
                     </div>
                   </div>
@@ -292,13 +301,14 @@ function CampusStructure() {
 
         .faculty-node,
         .building-node {
-          margin-bottom: 0.5rem;
+          margin-bottom: 0.75rem;
         }
 
         .tree-node {
-          padding: 1rem;
-          background: #334155;
-          border-radius: 8px;
+          padding: 1rem 1.25rem;
+          background: #0a0a0a;
+          border: 1px solid #27272a;
+          border-radius: 12px;
           cursor: pointer;
           transition: all 0.2s ease;
           display: flex;
@@ -307,40 +317,43 @@ function CampusStructure() {
         }
 
         .tree-node:hover {
-          background: #475569;
+          background: #111111;
+          border-color: #fbbf24;
           transform: translateX(4px);
         }
 
         .tree-node.faculty {
-          background: linear-gradient(135deg, #334155, #475569);
+          background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(34, 197, 94, 0.1) 100%);
+          border: 1px solid #27272a;
           font-weight: 600;
-          font-size: 1.1rem;
+          font-size: 1rem;
         }
 
         .tree-node.building {
           margin-left: 2rem;
-          margin-top: 0.5rem;
+          margin-top: 0.75rem;
+          background: #111111;
         }
 
         .node-icon {
-          font-size: 1.5rem;
+          font-size: 1.25rem;
         }
 
         .node-label {
           flex: 1;
-          color: #e2e8f0;
+          color: #ffffff;
         }
 
         .node-count,
         .node-stats {
-          color: #94a3b8;
-          font-size: 0.9rem;
+          color: #71717a;
+          font-size: 0.85rem;
           display: flex;
           gap: 0.5rem;
         }
 
         .buildings-container {
-          margin-top: 0.5rem;
+          margin-top: 0.75rem;
         }
 
         .rooms-container {
@@ -350,16 +363,16 @@ function CampusStructure() {
 
         .rooms-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+          grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
           gap: 0.75rem;
           margin-top: 0.75rem;
         }
 
         .room-card {
-          background: #1e293b;
-          border: 1px solid #334155;
-          border-radius: 8px;
-          padding: 0.75rem;
+          background: #0a0a0a;
+          border: 1px solid #27272a;
+          border-radius: 10px;
+          padding: 0.875rem;
           cursor: pointer;
           transition: all 0.2s ease;
           display: flex;
@@ -369,12 +382,12 @@ function CampusStructure() {
 
         .room-card:hover {
           transform: translateY(-2px);
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-          border-color: #3b82f6;
+          box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+          border-color: #22c55e;
         }
 
         .room-icon {
-          font-size: 1.5rem;
+          font-size: 1.25rem;
         }
 
         .room-info {
@@ -383,18 +396,18 @@ function CampusStructure() {
 
         .room-name {
           font-weight: 600;
-          color: #cbd5e1;
-          font-size: 0.9rem;
+          color: #ffffff;
+          font-size: 0.85rem;
         }
 
         .room-type {
-          color: #94a3b8;
+          color: #fbbf24;
           font-size: 0.75rem;
           text-transform: capitalize;
         }
 
         .room-capacity {
-          color: #64748b;
+          color: #71717a;
           font-size: 0.75rem;
           margin-top: 0.25rem;
         }
@@ -405,12 +418,13 @@ function CampusStructure() {
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0, 0, 0, 0.7);
+          background: rgba(0, 0, 0, 0.85);
           display: flex;
           align-items: center;
           justify-content: center;
           z-index: 1000;
           padding: 2rem;
+          backdrop-filter: blur(4px);
         }
 
         .modal-content {

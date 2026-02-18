@@ -4,22 +4,38 @@ import { dashboardAPI } from './api';
 import Dashboard from './components/Dashboard';
 import BuildingView from './components/BuildingView';
 import AnalyticsCharts from './components/AnalyticsCharts';
-import CampusStructure from './components/CampusStructure';
+import CampusMap from './components/CampusMap';
 import EnergyFlowDiagram from './components/EnergyFlowDiagram';
 import ManagementPanel from './components/ManagementPanel';
+import ThemeToggle from './components/ThemeToggle';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [healthStatus, setHealthStatus] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
+  const [theme, setTheme] = useState(() => {
+    // Get theme from localStorage or default to 'dark'
+    return localStorage.getItem('voltonic-theme') || 'dark';
+  });
+
+  useEffect(() => {
+    // Apply theme to document root
+    document.documentElement.setAttribute('data-theme', theme);
+    // Save theme preference
+    localStorage.setItem('voltonic-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prevTheme => prevTheme === 'dark' ? 'light' : 'dark');
+  };
 
   useEffect(() => {
     // Check health on mount
     checkHealth();
-    
+
     // Health check every minute
     const healthInterval = setInterval(checkHealth, 60000);
-    
+
     return () => clearInterval(healthInterval);
   }, []);
 
@@ -42,6 +58,7 @@ function App() {
           <p className="subtitle">Campus Energy Management System</p>
         </div>
         <div className="header-status">
+          <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
           <div className={`status-indicator ${healthStatus?.status === 'healthy' ? 'healthy' : 'error'}`}>
             {healthStatus?.status === 'healthy' ? '● Online' : '● Offline'}
           </div>
@@ -50,41 +67,41 @@ function App() {
       </header>
 
       <nav className="app-nav">
-        <button 
-          className={activeTab === 'dashboard' ? 'active' : ''} 
+        <button
+          className={activeTab === 'dashboard' ? 'active' : ''}
           onClick={() => setActiveTab('dashboard')}
         >
-          📊 Dashboard
+          Dashboard
         </button>
-        <button 
-          className={activeTab === 'buildings' ? 'active' : ''} 
+        <button
+          className={activeTab === 'buildings' ? 'active' : ''}
           onClick={() => setActiveTab('buildings')}
         >
-          🏢 Buildings
+          Buildings
         </button>
-        <button 
-          className={activeTab === 'analytics' ? 'active' : ''} 
+        <button
+          className={activeTab === 'analytics' ? 'active' : ''}
           onClick={() => setActiveTab('analytics')}
         >
-          📈 Analytics
+          Analytics
         </button>
-        <button 
-          className={activeTab === 'energyflow' ? 'active' : ''} 
+        <button
+          className={activeTab === 'energyflow' ? 'active' : ''}
           onClick={() => setActiveTab('energyflow')}
         >
-          🔋 Energy Flow
+          Energy Flow
         </button>
-        <button 
-          className={activeTab === 'structure' ? 'active' : ''} 
+        <button
+          className={activeTab === 'structure' ? 'active' : ''}
           onClick={() => setActiveTab('structure')}
         >
-          🗺️ Campus Map
+          Campus Map
         </button>
-        <button 
-          className={activeTab === 'management' ? 'active' : ''} 
+        <button
+          className={activeTab === 'management' ? 'active' : ''}
           onClick={() => setActiveTab('management')}
         >
-          ⚙️ Management
+          Management
         </button>
       </nav>
 
@@ -94,31 +111,31 @@ function App() {
             <Dashboard />
           </div>
         )}
-        
+
         {activeTab === 'buildings' && (
           <div className="buildings-layout">
             <BuildingView />
           </div>
         )}
-        
+
         {activeTab === 'analytics' && (
           <div className="analytics-layout">
             <AnalyticsCharts />
           </div>
         )}
-        
+
         {activeTab === 'energyflow' && (
           <div className="energyflow-layout">
             <EnergyFlowDiagram />
           </div>
         )}
-        
+
         {activeTab === 'structure' && (
           <div className="structure-layout">
-            <CampusStructure />
+            <CampusMap />
           </div>
         )}
-        
+
         {activeTab === 'management' && (
           <div className="management-layout">
             <ManagementPanel />
