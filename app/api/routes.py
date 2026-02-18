@@ -399,19 +399,40 @@ def get_room_details(room_id):
 
 @api_bp.route('/buildings', methods=['GET'])
 def get_all_buildings():
-    """Get all buildings with their structure"""
+    """Get all buildings with their structure and active energy sources"""
     try:
         buildings = Building.query.all()
+        
+        # Get latest active sources for all rooms to determine building connections
+        latest_time = db.session.query(db.func.max(EnergyLog.timestamp)).scalar()
+        room_sources = {}
+        
+        if latest_time:
+            # efficient query to get map of room_id -> source_name
+            logs = db.session.query(EnergyLog.room_id, EnergySource.name)\
+                .join(EnergySource)\
+                .filter(EnergyLog.timestamp == latest_time)\
+                .all()
+            # SQLAlchemy returns tuples for specific column queries
+            room_sources = {log[0]: log[1] for log in logs}
+            
         buildings_data = []
         
         for building in buildings:
+            building_sources = set()
             floors_data = []
+            
             for floor in building.floors:
                 rooms_by_type = {}
                 for room in floor.rooms:
                     if room.type not in rooms_by_type:
                         rooms_by_type[room.type] = 0
                     rooms_by_type[room.type] += 1
+                    
+                    # Track active source for this room
+                    if room.id in room_sources:
+                        # Normalize source name to lowercase just in case
+                        building_sources.add(room_sources[room.id].lower())
                 
                 floors_data.append({
                     'id': floor.id,
@@ -420,6 +441,10 @@ def get_all_buildings():
                     'rooms_by_type': rooms_by_type
                 })
             
+            # Default fallback if no data found
+            if not building_sources:
+                building_sources.add('grid')
+            
             buildings_data.append({
                 'id': building.id,
                 'name': building.name,
@@ -427,6 +452,7 @@ def get_all_buildings():
                 'faculty_name': building.faculty.name,
                 'total_floors': len(building.floors),
                 'total_rooms': sum(len(floor.rooms) for floor in building.floors),
+                'active_sources': list(building_sources),
                 'floors': floors_data
             })
         

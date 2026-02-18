@@ -1,491 +1,723 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { dashboardAPI } from '../api';
 
 function EnergyFlowDiagram() {
-  const [buildings, setBuildings] = useState([]);
-  const [selectedBuilding, setSelectedBuilding] = useState(null);
-  const [energyFlow, setEnergyFlow] = useState(null);
-  const [selectedFloor, setSelectedFloor] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+    const [buildings, setBuildings] = useState([]);
+    const [selectedBuilding, setSelectedBuilding] = useState(null);
+    const [selectedFaculty, setSelectedFaculty] = useState(null);
 
-  useEffect(() => {
-    fetchBuildings();
-  }, []);
+    const [energyFlow, setEnergyFlow] = useState(null); // For single building
+    const [facultyData, setFacultyData] = useState(null); // For faculty aggregation
 
-  useEffect(() => {
-    if (selectedBuilding) {
-      fetchEnergyFlow();
-      const interval = setInterval(fetchEnergyFlow, 5000);
-      return () => clearInterval(interval);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+
+    const containerRef = useRef(null);
+
+    // Grouping mapping
+    const FACULTY_ABBR = {
+        "Faculty of Engineering": "FoE",
+        "Faculty of Science": "FoS",
+        "Faculty of Arts": "FoA",
+        "Faculty of Commerce": "FoC"
+    };
+
+    const SOURCE_COLORS = {
+        grid: 'var(--secondary)', // green
+        solar: 'var(--accent-yellow)', // yellow
+        diesel: 'var(--danger)' // red
+    };
+
+    const updateDimensions = () => {
+        if (containerRef.current) {
+            const { clientWidth, clientHeight } = containerRef.current;
+            setDimensions({
+                width: clientWidth,
+                height: clientHeight
+            });
+        }
+    };
+
+    useLayoutEffect(() => {
+        updateDimensions();
+        window.addEventListener('resize', updateDimensions);
+        const observer = new ResizeObserver(updateDimensions);
+        if (containerRef.current) observer.observe(containerRef.current);
+
+        return () => {
+            window.removeEventListener('resize', updateDimensions);
+            observer.disconnect();
+        };
+    }, []);
+
+    useEffect(() => {
+        fetchBuildings();
+    }, []);
+
+    // Poll for Building Data
+    useEffect(() => {
+        if (selectedBuilding) {
+            fetchEnergyFlow(selectedBuilding);
+            const interval = setInterval(() => fetchEnergyFlow(selectedBuilding), 5000);
+            return () => clearInterval(interval);
+        } else {
+            setEnergyFlow(null);
+        }
+    }, [selectedBuilding]);
+
+    // Poll for Faculty Data
+    useEffect(() => {
+        if (selectedFaculty) {
+            fetchFacultyData(selectedFaculty);
+            const interval = setInterval(() => fetchFacultyData(selectedFaculty), 5000);
+            return () => clearInterval(interval);
+        } else {
+            setFacultyData(null);
+        }
+    }, [selectedFaculty]);
+
+
+    const fetchBuildings = async () => {
+        try {
+            const response = await dashboardAPI.getBuildings();
+            setBuildings(response.data.data);
+            setLoading(false);
+            setTimeout(updateDimensions, 100);
+        } catch (err) {
+            setError('Failed to load buildings');
+            setLoading(false);
+        }
+    };
+
+    const fetchEnergyFlow = async (buildingId) => {
+        try {
+            const response = await dashboardAPI.getBuildingEnergyFlow(buildingId);
+            setEnergyFlow(response.data.data);
+        } catch (err) {
+            console.error('Failed to load energy flow:', err);
+        }
+    };
+
+    const fetchFacultyData = async (facultyName) => {
+        const facBuildings = buildings.filter(b => b.faculty_name === facultyName);
+
+        if (facBuildings.length === 0) return;
+
+        try {
+            const promises = facBuildings.map(b => dashboardAPI.getBuildingEnergyFlow(b.id));
+            const responses = await Promise.all(promises);
+
+            let totalLoad = 0;
+            const buildingStats = [];
+
+            responses.forEach(res => {
+                const data = res.data.data;
+                totalLoad += data.total_load;
+                buildingStats.push({
+                    id: data.building_id,
+                    name: data.building_name,
+                    load: data.total_load
+                });
+            });
+
+            setFacultyData({
+                name: facultyName,
+                total_load: totalLoad,
+                buildings: buildingStats
+            });
+
+        } catch (err) {
+            console.error("Failed to load faculty data", err);
+        }
+    };
+
+    const handleBuildingClick = (buildingId) => {
+        if (selectedBuilding === buildingId) {
+            setSelectedBuilding(null);
+        } else {
+            setSelectedBuilding(buildingId);
+            setSelectedFaculty(null); // Close faculty view
+        }
+    };
+
+    const handleFacultyClick = (facultyName) => {
+        if (selectedFaculty === facultyName) {
+            setSelectedFaculty(null);
+        } else {
+            setSelectedFaculty(facultyName);
+            setSelectedBuilding(null); // Close building view
+        }
+    };
+
+    // Helper to expand building names (e.g., "FoE-B1" -> "Engineering Block 1")
+    const expandBuildingName = (shortName) => {
+        if (!shortName) return "";
+        const [facAbbr, blockCode] = shortName.split('-');
+
+        const facultMap = {
+            "FoE": "Engineering",
+            "FoS": "Science",
+            "FoA": "Arts",
+            "FoC": "Commerce"
+        };
+
+        const blockNum = blockCode ? blockCode.replace('B', '') : '';
+        return `${facultMap[facAbbr] || facAbbr} - Block ${blockNum}`;
+    };
+
+    const [activeFloorIndex, setActiveFloorIndex] = useState(0);
+
+    // Reset tab when building changes
+    useEffect(() => {
+        if (selectedBuilding) setActiveFloorIndex(0);
+    }, [selectedBuilding]);
+
+    const getSourceColor = (source) => {
+        const s = (source || '').toLowerCase();
+        return SOURCE_COLORS[s] || '#ff00ff'; // Fallback to Magenta for debugging
+    };
+
+    if (loading) return <div className="loading">Loading diagram...</div>;
+    if (error) return <div className="error">{error}</div>;
+
+    // --- Layout Calculations ---
+
+    const SIDEBAR_WIDTH = 450;
+    const isSidebarOpen = !!selectedBuilding || !!selectedFaculty;
+
+    let availableWidth = dimensions.width;
+    if (isSidebarOpen) {
+        availableWidth = dimensions.width - SIDEBAR_WIDTH;
     }
-  }, [selectedBuilding]);
 
-  const fetchBuildings = async () => {
-    try {
-      const response = await dashboardAPI.getBuildings();
-      setBuildings(response.data.data);
-      if (response.data.data.length > 0) {
-        setSelectedBuilding(response.data.data[0].id);
-      }
-      setLoading(false);
-    } catch (err) {
-      setError('Failed to load buildings');
-      setLoading(false);
-    }
-  };
+    const centerX = availableWidth / 2;
+    const centerY = dimensions.height / 2;
 
-  const fetchEnergyFlow = async () => {
-    if (!selectedBuilding) return;
+    const minDim = Math.min(availableWidth, dimensions.height);
 
-    try {
-      const response = await dashboardAPI.getBuildingEnergyFlow(selectedBuilding);
-      setEnergyFlow(response.data.data);
-    } catch (err) {
-      console.error('Failed to load energy flow:', err);
-    }
-  };
+    // Faculty Radius currently ~32% -> Reduced to 30%
+    const rFaculty = minDim * 0.30;
+    // Building Radius ~16% -> Increased to 19%
+    const rBuilding = minDim * 0.19;
 
-  const getSourceColor = (source) => {
-    switch (source) {
-      case 'grid': return 'var(--secondary)'; // green
-      case 'solar': return 'var(--accent-yellow)'; // yellow
-      case 'diesel': return 'var(--danger)'; // red
-      default: return 'var(--text-muted)'; // gray
-    }
-  };
 
-  const getTypeIcon = (type) => {
-    switch (type) {
-      case 'classroom': return '📚';
-      case 'lab': return '🔬';
-      case 'staff': return '👔';
-      case 'Smart_Class': return '💡';
-      default: return '🏢';
-    }
-  };
+    const sourceNodes = [
+        { id: 'grid', label: 'Grid', color: SOURCE_COLORS.grid, icon: '⚡', xOffset: -90 },
+        { id: 'solar', label: 'Solar', color: SOURCE_COLORS.solar, icon: '☀️', xOffset: 0 },
+        { id: 'diesel', label: 'Diesel', color: SOURCE_COLORS.diesel, icon: '🛢️', xOffset: 90 }
+    ];
 
-  if (loading) return <div className="loading">Loading energy flow...</div>;
-  if (error) return <div className="error">{error}</div>;
-  if (!energyFlow) return <div>Select a building to view energy flow</div>;
+    // Group buildings
+    const groupedBuildings = buildings.reduce((acc, b) => {
+        const fac = b.faculty_name || "Other";
+        if (!acc[fac]) acc[fac] = { buildings: [], sources: new Set() };
 
-  const currentBuilding = buildings.find(b => b.id === selectedBuilding);
+        acc[fac].buildings.push(b);
 
-  return (
-    <div className="energy-flow-container">
-      <div className="flow-header">
-        <h2>
-          <span style={{ marginRight: '0.5rem' }}>🔋</span>
-          Energy Flow Visualization
-        </h2>
-        <div className="building-selector">
-          <label>Building: </label>
-          <select
-            value={selectedBuilding || ''}
-            onChange={(e) => setSelectedBuilding(parseInt(e.target.value))}
-          >
-            {buildings.map(building => (
-              <option key={building.id} value={building.id}>
-                {building.name} - {building.faculty_name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+        // Aggregate actual active sources from buildings
+        if (b.active_sources && b.active_sources.length > 0) {
+            b.active_sources.forEach(s => acc[fac].sources.add(s));
+        } else {
+            // Fallback if API hasn't updated or data is missing
+            acc[fac].sources.add('grid');
+        }
 
-      <div className="building-summary">
-        <div className="summary-card">
-          <h4>{energyFlow.building_name}</h4>
-          <p>Total Load: <strong>{energyFlow.total_load.toFixed(2)} kW</strong></p>
-          <p>Floors: {energyFlow.floors.length}</p>
-          <p className="timestamp">Updated: {new Date(energyFlow.timestamp).toLocaleTimeString()}</p>
-        </div>
-      </div>
+        return acc;
+    }, {});
 
-      <div className="energy-sources-legend">
-        <h4>Energy Sources:</h4>
-        <div className="legend-items">
-          <div className="legend-item">
-            <span className="legend-color" style={{ backgroundColor: 'var(--secondary)' }}></span>
-            <span>Grid (₹8/kWh)</span>
-          </div>
-          <div className="legend-item">
-            <span className="legend-color" style={{ backgroundColor: 'var(--accent-yellow)' }}></span>
-            <span>Solar (₹4/kWh)</span>
-          </div>
-          <div className="legend-item">
-            <span className="legend-color" style={{ backgroundColor: 'var(--danger)' }}></span>
-            <span>Diesel (₹16/kWh)</span>
-          </div>
-        </div>
-      </div>
+    const facultyNames = Object.keys(groupedBuildings);
 
-      <div className="floors-container">
-        {energyFlow.floors.map(floor => (
-          <div key={floor.floor_id} className="floor-section">
-            <div
-              className="floor-header"
-              onClick={() => setSelectedFloor(selectedFloor === floor.floor_id ? null : floor.floor_id)}
-            >
-              <h3>
-                Floor {floor.floor_number}
-                <span className="floor-load">{floor.total_load.toFixed(2)} kW</span>
-              </h3>
-              <span className="expand-icon">{selectedFloor === floor.floor_id ? '▼' : '▶'}</span>
+    const nodes = [];
+    const links = [];
+
+    // Calculate Nodes & Links
+    facultyNames.forEach((facName, i) => {
+        const groupData = groupedBuildings[facName];
+
+        // Distribute Faculties
+        const angle = (i / facultyNames.length) * 2 * Math.PI - Math.PI / 4;
+        const fx = centerX + rFaculty * Math.cos(angle);
+        const fy = centerY + rFaculty * Math.sin(angle);
+
+        // Faculty Node
+        nodes.push({
+            type: 'faculty',
+            id: `fac-${facName}`,
+            name: FACULTY_ABBR[facName] || facName,
+            fullName: facName,
+            x: fx, y: fy
+        });
+
+        // Connections: Source -> Faculty (Iterate all active sources)
+        sourceNodes.forEach(source => {
+            if (groupData.sources.has(source.id)) {
+                const sx = centerX + source.xOffset;
+                const sy = centerY;
+
+                links.push({
+                    id: `link-${source.id}-${facName}`,
+                    x1: sx, y1: sy,
+                    x2: fx, y2: fy,
+                    color: source.color,
+                    type: 'primary'
+                });
+            }
+        });
+
+        // Buildings
+        const facBuildings = groupData.buildings;
+        facBuildings.forEach((b, j) => {
+            // WIDENED SPREAD: PI/1.4 to fix overlap
+            const spreadAngle = Math.PI / 1.4;
+            const startAngle = angle - spreadAngle / 2;
+            const bAngle = startAngle + (j / (facBuildings.length - 1 || 1)) * spreadAngle;
+
+            const bx = fx + rBuilding * Math.cos(bAngle);
+            const by = fy + rBuilding * Math.sin(bAngle);
+
+            // Multi-Line Connection Logic - Use specific building sources
+            const buildingSources = b.active_sources && b.active_sources.length > 0
+                ? b.active_sources
+                : ['grid'];
+
+            const totalLinkWidth = (buildingSources.length - 1) * 4; // 4px spacing
+
+            // Calculate Normal Vector for offsets
+            const dx = bx - fx;
+            const dy = by - fy;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            const ux = dx / len;
+            const uy = dy / len;
+            const nx = -uy; // Perpendicular vector
+            const ny = ux;
+
+            buildingSources.forEach((sourceId, sIndex) => {
+                // Calculate offset: Centered around 0
+                // e.g., 2 items: -2, +2.  3 items: -4, 0, +4.
+                const offsetStep = 4;
+                const currentOffset = (sIndex - (buildingSources.length - 1) / 2) * offsetStep;
+
+                const offX = nx * currentOffset;
+                const offY = ny * currentOffset;
+
+                links.push({
+                    id: `link-${facName}-${b.id}-${sourceId}`,
+                    x1: fx + offX, y1: fy + offY,
+                    x2: bx + offX, y2: by + offY,
+                    color: SOURCE_COLORS[sourceId],
+                    type: 'secondary',
+                    active: selectedBuilding === b.id
+                });
+            });
+
+            nodes.push({
+                type: 'building',
+                id: b.id,
+                data: b,
+                x: bx, y: by
+            });
+        });
+    });
+
+    const hasDimensions = dimensions.width > 0 && dimensions.height > 0;
+
+    return (
+        <div className="energy-flow-page" ref={containerRef}>
+            {hasDimensions && (
+                <div className="diagram-container">
+                    <svg className="connections-layer" width={dimensions.width} height={dimensions.height}>
+                        <defs>
+                            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                                <feGaussianBlur stdDeviation="3.5" result="coloredBlur" />
+                                <feMerge>
+                                    <feMergeNode in="coloredBlur" />
+                                    <feMergeNode in="SourceGraphic" />
+                                </feMerge>
+                            </filter>
+                        </defs>
+
+                        {links.map(link => (
+                            <path
+                                key={link.id}
+                                d={`M ${link.x1} ${link.y1} L ${link.x2} ${link.y2}`}
+                                className={`connection-line ${link.type} ${link.active ? 'active' : ''}`}
+                                stroke={link.color}
+                                fill="none"
+                                style={{
+                                    strokeWidth: link.type === 'primary' ? 3 : 2,
+                                    filter: 'url(#glow)'
+                                }}
+                            />
+                        ))}
+                    </svg>
+
+                    {/* Source Stack */}
+                    <div className="source-stack-container" style={{ left: centerX, top: centerY }}>
+                        {sourceNodes.map(source => (
+                            <div
+                                key={source.id}
+                                className="source-node"
+                                style={{ borderColor: source.color }}
+                            >
+                                <span className="source-icon-sm">{source.icon}</span>
+                                <span className="source-label-sm">{source.label}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Render Nodes */}
+                    {nodes.map(node => {
+                        if (node.type === 'faculty') {
+                            const isSelected = selectedFaculty === node.fullName;
+                            return (
+                                <div
+                                    key={node.id}
+                                    className={`faculty-node ${isSelected ? 'selected' : ''}`}
+                                    style={{ left: node.x, top: node.y }}
+                                    onClick={() => handleFacultyClick(node.fullName)}
+                                >
+                                    <span className="faculty-label">{node.name}</span>
+                                </div>
+                            );
+                        } else {
+                            const b = node.data;
+                            return (
+                                <div
+                                    key={node.id}
+                                    className={`building-node ${selectedBuilding === b.id ? 'selected' : ''}`}
+                                    style={{ left: node.x, top: node.y }}
+                                    onClick={() => handleBuildingClick(b.id)}
+                                >
+                                    <div className="building-icon">🏢</div>
+                                    <div className="building-label">{b.name}</div>
+                                </div>
+                            );
+                        }
+                    })}
+                </div>
+            )}
+
+            {/* DETAIL SIDEBAR */}
+            <div className={`detail-sidebar ${isSidebarOpen ? 'open' : ''}`}>
+                {/* Sidebar content same as before ... keeping concise */}
+                {selectedFaculty && facultyData && (
+                    <>
+                        <div className="sidebar-header">
+                            <button className="close-btn" onClick={() => setSelectedFaculty(null)}>×</button>
+                            <h3>{facultyData.name}</h3>
+                        </div>
+                        <div className="sidebar-content">
+                            <div className="kpi-card">
+                                <div className="kpi-label">Total Faculty Load</div>
+                                <div className="kpi-value">{facultyData.total_load.toFixed(2)} kW</div>
+                            </div>
+                            <h4>Buildings Breakdown</h4>
+                            <div className="floors-list">
+                                {facultyData.buildings.map(b => (
+                                    <div key={b.id} className="floor-item" onClick={() => handleBuildingClick(b.id)} style={{ cursor: 'pointer' }}>
+                                        <div className="floor-summary" style={{ border: 'none', marginBottom: 0 }}>
+                                            <h4>{b.name}</h4>
+                                            <span>{b.load.toFixed(2)} kW</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </>
+                )}
+                {selectedBuilding && energyFlow && (
+                    <>
+                        <div className="sidebar-header">
+                            <button className="close-btn" onClick={() => setSelectedBuilding(null)}>×</button>
+                            <div>
+                                <h3 style={{ fontSize: '1.2rem', marginBottom: '0.2rem' }}>{expandBuildingName(energyFlow.building_name)}</h3>
+                                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{energyFlow.building_name}</span>
+                            </div>
+                        </div>
+                        <div className="sidebar-content">
+                            <div className="kpi-card">
+                                <div className="kpi-label">Total Load</div>
+                                <div className="kpi-value">{energyFlow.total_load.toFixed(2)} kW</div>
+                            </div>
+
+                            {/* Floor Tabs */}
+                            <div className="tabs" style={{ marginBottom: '1rem', flexWrap: 'nowrap', overflowX: 'auto', paddingBottom: '0.5rem', display: 'flex', gap: '0.5rem' }}>
+                                {energyFlow.floors.map((floor, index) => (
+                                    <button
+                                        key={floor.floor_id}
+                                        className={activeFloorIndex === index ? 'active' : ''}
+                                        onClick={() => setActiveFloorIndex(index)}
+                                        style={{
+                                            flex: 1,
+                                            padding: '0.5rem',
+                                            fontSize: '0.85rem',
+                                            whiteSpace: 'nowrap',
+                                            background: activeFloorIndex === index ? 'var(--gradient-primary)' : 'var(--bg-secondary)',
+                                            color: activeFloorIndex === index ? 'var(--bg-primary)' : 'var(--text-secondary)',
+                                            border: '1px solid var(--border-color)',
+                                            borderRadius: '6px',
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        Floor {floor.floor_number}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Active Floor Content */}
+                            {energyFlow.floors[activeFloorIndex] && (
+                                <div className="floor-item animate-fade-in">
+                                    <div className="floor-summary">
+                                        <h4>Floor {energyFlow.floors[activeFloorIndex].floor_number} Summary</h4>
+                                        <span>{energyFlow.floors[activeFloorIndex].total_load.toFixed(2)} kW</span>
+                                    </div>
+                                    <div className="rooms-mini-grid">
+                                        {energyFlow.floors[activeFloorIndex].rooms.map(room => (
+                                            <div key={room.room_id} className="room-mini-card">
+                                                <div className="room-status-indicator"
+                                                    title={`Source: ${room.energy_source}`}
+                                                    style={{
+                                                        backgroundColor: getSourceColor(room.energy_source),
+                                                        boxShadow: `0 0 8px ${getSourceColor(room.energy_source)}`
+                                                    }} />
+                                                <span className="room-mini-name">{room.room_name}</span>
+                                                <span className="room-mini-val">{room.total_load.toFixed(1)}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </>
+                )}
+                {isSidebarOpen && !selectedBuilding && !selectedFaculty && (
+                    <div className="empty-state"><p>Select an item</p></div>
+                )}
+                {(selectedFaculty && !facultyData) || (selectedBuilding && !energyFlow) ? (
+                    <div className="empty-state"><p>Loading details...</p></div>
+                ) : null}
             </div>
 
-            {selectedFloor === floor.floor_id && (
-              <div className="rooms-grid">
-                {floor.rooms.map(room => (
-                  <div
-                    key={room.room_id}
-                    className={`room-card ${room.occupancy ? 'occupied' : 'vacant'}`}
-                    style={{
-                      borderLeft: `4px solid ${getSourceColor(room.energy_source)}`
-                    }}
-                  >
-                    <div className="room-header">
-                      <span className="room-icon">{getTypeIcon(room.room_type)}</span>
-                      <span className="room-name">{room.room_name}</span>
-                    </div>
-
-                    <div className="room-details">
-                      <div className="detail-row">
-                        <span>Type:</span>
-                        <span className="room-type-badge">{room.room_type}</span>
-                      </div>
-                      <div className="detail-row">
-                        <span>Capacity:</span>
-                        <span>{room.capacity}</span>
-                      </div>
-                      <div className="detail-row">
-                        <span>Load:</span>
-                        <span className="load-value">{room.total_load.toFixed(2)} kW</span>
-                      </div>
-                      <div className="detail-row">
-                        <span>Source:</span>
-                        <span
-                          className="source-badge"
-                          style={{
-                            backgroundColor: getSourceColor(room.energy_source),
-                            color: 'var(--bg-primary)',
-                            padding: '2px 8px',
-                            borderRadius: '4px',
-                            fontSize: '0.85em'
-                          }}
-                        >
-                          {room.energy_source}
-                        </span>
-                      </div>
-                      <div className="detail-row">
-                        <span>Status:</span>
-                        <span className={room.occupancy ? 'status-active' : 'status-idle'}>
-                          {room.occupancy ? '✓ Occupied' : '○ Vacant'}
-                        </span>
-                      </div>
-                      {room.optimized && (
-                        <div className="optimized-badge">⚡ Optimized</div>
-                      )}
-                    </div>
-
-                    <div className="energy-flow-arrow">
-                      <div className="arrow">→</div>
-                      <div className="flow-label">₹{(room.total_load * room.energy_source_cost).toFixed(2)}/h</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      <style jsx>{`
-        .energy-flow-container {
-          padding: 1.5rem;
-          background: var(--bg-card);
-          border-radius: 16px;
-          border: 1px solid var(--border-color);
-        }
-
-        .flow-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 1.5rem;
-        }
-
-        .flow-header h2 {
-          color: var(--text-primary);
-          margin: 0;
-          font-size: 1.25rem;
-          font-weight: 600;
-          display: flex;
-          align-items: center;
-        }
-
-        .building-selector {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .building-selector label {
-          color: var(--text-muted);
-          font-size: 0.9rem;
-        }
-
-        .building-selector select {
-          padding: 0.625rem 1rem;
-          background: var(--bg-secondary);
-          border: 1px solid var(--border-color);
-          border-radius: 8px;
-          color: var(--text-primary);
-          font-size: 0.9rem;
-          transition: all 0.15s ease;
-        }
-
-        .building-selector select:focus {
-          outline: none;
-          border-color: var(--primary);
-          box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
-        }
-
-        .building-summary {
-          background: var(--bg-secondary);
-          padding: 1.25rem;
-          border-radius: 12px;
-          margin-bottom: 1.25rem;
-          border: 1px solid var(--border-color);
-        }
-
-        .summary-card h4 {
-          color: var(--primary);
-          margin: 0 0 0.75rem 0;
-          font-size: 1.1rem;
-        }
-
-        .summary-card p {
-          color: var(--text-secondary);
-          margin: 0.375rem 0;
-          font-size: 0.9rem;
-        }
-
-        .summary-card strong {
-          color: var(--secondary);
-          font-size: 1.1em;
-        }
-
-        .timestamp {
-          font-size: 0.8rem !important;
-          color: var(--text-muted) !important;
-        }
-
-        .energy-sources-legend {
-          background: var(--bg-secondary);
-          padding: 1rem 1.25rem;
-          border-radius: 12px;
-          margin-bottom: 1.25rem;
-          border: 1px solid var(--border-color);
-        }
-
-        .energy-sources-legend h4 {
-          color: var(--text-primary);
-          margin: 0 0 0.75rem 0;
-          font-size: 0.9rem;
-          font-weight: 500;
-        }
-
-        .legend-items {
-          display: flex;
-          gap: 1.5rem;
-          flex-wrap: wrap;
-        }
-
-        .legend-item {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          color: var(--text-secondary);
-          font-size: 0.85rem;
-        }
-
-        .legend-color {
-          width: 16px;
-          height: 16px;
-          border-radius: 4px;
-        }
-
-        .floors-container {
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-        }
-
-        .floor-section {
-          background: var(--bg-secondary);
-          border-radius: 12px;
+            <style jsx>{`
+        .energy-flow-page {
+          width: 100%;
+          height: calc(100vh - 120px);
+          position: relative;
+          background: var(--bg-primary);
           overflow: hidden;
-          border: 1px solid var(--border-color);
-        }
-
-        .floor-header {
-          padding: 1rem 1.25rem;
-          background: var(--bg-card);
-          cursor: pointer;
           display: flex;
-          justify-content: space-between;
-          align-items: center;
-          user-select: none;
-          border-bottom: 1px solid var(--border-color);
-          transition: all 0.15s ease;
         }
 
-        .floor-header:hover {
-          background: var(--bg-card-hover);
+        .diagram-container {
+          flex: 1;
+          position: relative;
+          width: 100%;
+          height: 100%;
+          transition: width 0.4s ease; 
         }
 
-        .floor-header h3 {
-          color: var(--text-primary);
-          margin: 0;
+        .connections-layer {
+          position: absolute;
+          top: 0;
+          left: 0;
+          pointer-events: none;
+          z-index: 0;
+        }
+
+        .connection-line {
+          stroke-dasharray: 10, 5, 2, 5;
+          stroke-dashoffset: 0;
+          animation: electricFlow 0.4s linear infinite;
+          opacity: 0.6;
+          transition: stroke-width 0.3s;
+        }
+        
+        .connection-line.active {
+          opacity: 1;
+          animation: electricFlow 0.15s linear infinite;
+          stroke-width: 4 !important;
+        }
+
+        @keyframes electricFlow {
+          0% { stroke-dashoffset: 22; }
+          100% { stroke-dashoffset: 0; }
+        }
+
+        .source-stack-container {
+          position: absolute;
+          transform: translate(-50%, -50%);
           display: flex;
-          align-items: center;
-          gap: 1rem;
-          font-size: 1rem;
-          font-weight: 500;
+          gap: 15px;
+          z-index: 10;
+          transition: left 0.4s ease;
         }
 
-        .floor-load {
-          font-size: 0.9em;
-          color: var(--secondary);
-          font-weight: 600;
+        .source-node {
+            width: 60px;
+            height: 60px;
+            background: var(--bg-card);
+            border: 2px solid;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            transition: transform 0.2s;
         }
+        
+        .source-node:hover { transform: scale(1.15); }
+        .source-icon-sm { font-size: 1.5rem; }
+        .source-label-sm { font-size: 0.7rem; font-weight: 700; color: var(--text-primary); margin-top: 2px; }
 
-        .expand-icon {
-          color: var(--text-muted);
-          font-size: 0.85rem;
-        }
-
-        .rooms-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-          gap: 1rem;
-          padding: 1.25rem;
-        }
-
-        .room-card {
-          background: var(--bg-card);
-          border-radius: 12px;
-          padding: 1rem;
-          transition: all 0.2s ease;
-          border: 1px solid var(--border-color);
-        }
-
-        .room-card:hover {
-          transform: translateY(-2px);
-          box-shadow: var(--shadow-lg);
-          border-color: var(--border-light);
-        }
-
-        .room-card.occupied {
-          background: var(--gradient-subtle);
-        }
-
-        .room-header {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          margin-bottom: 1rem;
-        }
-
-        .room-icon {
-          font-size: 1.25rem;
-        }
-
-        .room-name {
-          color: var(--text-primary);
-          font-weight: 500;
-          font-size: 0.9rem;
-        }
-
-        .room-details {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-
-        .detail-row {
-          display: flex;
-          justify-content: space-between;
-          font-size: 0.8rem;
-          color: var(--text-muted);
-        }
-
-        .room-type-badge {
+        .faculty-node {
+          position: absolute;
+          transform: translate(-50%, -50%);
+          width: 70px; /* Reduced from 80 */
+          height: 70px; /* Reduced from 80 */
+          border-radius: 50%;
           background: var(--bg-secondary);
-          padding: 0.125rem 0.5rem;
-          border-radius: 4px;
-          font-size: 0.8rem;
-          color: var(--text-secondary);
-        }
-
-        .load-value {
-          color: var(--accent-yellow);
-          font-weight: 600;
-        }
-
-        .status-active {
-          color: var(--secondary);
-        }
-
-        .status-idle {
-          color: var(--text-muted);
-        }
-
-        .optimized-badge {
-          background: var(--gradient-primary);
-          color: var(--bg-primary);
-          padding: 0.375rem 0.75rem;
-          border-radius: 6px;
-          font-size: 0.75rem;
-          text-align: center;
-          margin-top: 0.75rem;
-          font-weight: 600;
-        }
-
-        .energy-flow-arrow {
-          margin-top: 0.75rem;
-          padding-top: 0.75rem;
-          border-top: 1px solid var(--border-color);
+          border: 3px solid var(--border-color);
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 0.5rem;
+          z-index: 15; 
+          box-shadow: 0 0 25px rgba(0,0,0,0.3);
+          cursor: pointer;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .arrow {
-          color: var(--secondary);
-          font-size: 1.1rem;
+        .faculty-node:hover {
+            border-color: var(--accent-yellow);
+            transform: translate(-50%, -50%) scale(1.1);
         }
 
-        .flow-label {
-          color: var(--accent-yellow);
-          font-weight: 600;
-          font-size: 0.85rem;
+        .faculty-node.selected {
+            border-color: var(--accent-yellow);
+            box-shadow: 0 0 30px rgba(255, 191, 0, 0.4);
+            background: var(--bg-card);
+        }
+        
+        .faculty-label { font-size: 1rem; font-weight: 800; color: var(--text-secondary); text-align: center; }
+
+        .building-node {
+          position: absolute;
+          transform: translate(-50%, -50%);
+          width: 75px; /* Increased from 55 */
+          height: 75px; /* Increased from 55 */
+          background: var(--bg-card);
+          border: 2px solid var(--border-color);
+          border-radius: 50%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          z-index: 15;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
 
-        .loading, .error {
-          padding: 3rem;
-          text-align: center;
+        .building-node:hover {
+          transform: translate(-50%, -50%) scale(1.2);
+          border-color: var(--accent-yellow);
+          box-shadow: 0 0 15px rgba(255, 191, 0, 0.5);
+        }
+
+        .building-node.selected {
+           border-color: var(--accent-yellow);
+           background: var(--bg-secondary);
+           box-shadow: 0 0 20px rgba(255, 191, 0, 0.6);
+           z-index: 20;
+        }
+
+        .building-icon { font-size: 1.4rem; }
+        .building-label { font-size: 0.7rem; color: var(--text-primary); font-weight: 700; text-align: center; line-height: 1; margin-top: 2px; }
+
+        .detail-sidebar {
+          position: absolute;
+          right: -450px;
+          top: 0;
+          width: 450px;
+          height: 100%;
+          background: var(--bg-card); /* Changed from hardcoded dark rgba */
+          backdrop-filter: blur(15px);
+          border-left: 1px solid var(--border-color);
+          transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          z-index: 50;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .detail-sidebar.open {
+          right: 0;
+          box-shadow: var(--shadow-lg); /* Changed from hardcoded shadow */
+        }
+
+        .sidebar-header {
+          padding: 1.5rem;
+          border-bottom: 1px solid var(--border-color);
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+        
+        .close-btn {
+          background: none;
+          border: none;
           color: var(--text-muted);
+          font-size: 1.5rem;
+          cursor: pointer;
         }
+        
+        .sidebar-content { flex: 1; overflow-y: auto; padding: 1.5rem; }
+        
+        .kpi-card {
+           background: var(--bg-card);
+           padding: 1.2rem;
+           border-radius: 12px;
+           margin-bottom: 1.5rem;
+           border: 1px solid var(--border-color);
+           text-align: center;
+           box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .kpi-value { color: var(--accent-yellow); font-size: 2rem; font-weight: 700; }
+        
+        .floors-list { display: flex; flex-direction: column; gap: 1rem; }
+        
+        .floor-item {
+          background: var(--bg-secondary);
+          border-radius: 8px;
+          padding: 1rem;
+          border: 1px solid var(--border-color);
+          transition: background 0.2s;
+        }
+        
+        .floor-item:hover { background: var(--bg-card); }
 
-        .error {
-          color: var(--danger);
+        .floor-summary {
+          display: flex; justify-content: space-between; margin-bottom: 0.5rem;
+          border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;
         }
+        
+        .rooms-mini-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+        
+        .room-mini-card {
+          background: var(--bg-card); padding: 0.75rem; border-radius: 6px;
+          display: flex; align-items: center; gap: 0.75rem; font-size: 0.85rem;
+          border: 1px solid transparent;
+        }
+        
+        .room-status-indicator { width: 10px; height: 10px; border-radius: 50%; }
+        .room-mini-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-secondary); }
+        .room-mini-val { font-weight: 600; }
+        
+        .empty-state { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); }
       `}</style>
-    </div>
-  );
+        </div>
+    );
 }
 
 export default EnergyFlowDiagram;
