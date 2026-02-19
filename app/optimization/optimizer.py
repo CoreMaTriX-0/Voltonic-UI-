@@ -66,19 +66,23 @@ class EnergyOptimizer:
     @staticmethod
     def get_savings_summary(start_time=None, end_time=None):
         """Calculate total energy savings and environmental impact"""
+        from sqlalchemy import func
         
-        query = EnergyLog.query.filter_by(optimized=True)
+        # Base query for optimized logs
+        query = db.session.query(func.count(EnergyLog.id)).filter(EnergyLog.optimized == True)
         
         if start_time:
             query = query.filter(EnergyLog.timestamp >= start_time)
         if end_time:
             query = query.filter(EnergyLog.timestamp <= end_time)
         
-        optimized_logs = query.all()
+        # optimized_logs = query.all()  # <--- THIS WAS THE BOTTLENECK
+        
+        # Efficient count query
+        total_optimized = query.scalar() or 0
         
         # Note: We need to calculate savings differently
         # For now, estimate avg savings per optimized log
-        total_optimized = len(optimized_logs)
         
         # Rough estimate: avg 1.5 kW saved per optimization
         avg_savings_per_optimization = 1.5
