@@ -52,25 +52,25 @@ def seed_campus():
     # First, seed energy sources
     seed_energy_sources()
     
-    # Faculty names
-    faculty_names = [
-        "Faculty of Engineering",
-        "Faculty of Science",
-        "Faculty of Arts",
-        "Faculty of Commerce"
-    ]
+    # Faculty names mapped to their abbreviations
+    faculty_map = {
+        "Faculty of Engineering": "FoE",
+        "Faculty of Science": "FoS",
+        "Faculty of Arts": "FoA",
+        "Faculty of Commerce": "FoC"
+    }
     
-    for fac_idx, fac_name in enumerate(faculty_names, 1):
+    for fac_idx, (fac_name, fac_abbr) in enumerate(faculty_map.items(), 1):
         faculty = Faculty(name=fac_name)
         db.session.add(faculty)
         db.session.flush()
         
-        print(f"   Created {fac_name}")
+        print(f"   Created {fac_name} ({fac_abbr})")
         
         # 3 Buildings per faculty
         for bld_idx in range(1, 4):
             building = Building(
-                name=f"{fac_name[:3].upper()}-B{bld_idx}",
+                name=f"{fac_abbr}-B{bld_idx}",
                 faculty_id=faculty.id
             )
             db.session.add(building)

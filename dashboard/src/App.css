@@ -13,15 +13,15 @@
 /* Dark Theme (Default) */
 [data-theme="dark"] {
   /* Primary Colors */
-  --bg-primary: #0F172A;
-  --bg-secondary: #1E293B;
-  --bg-card: #1E293B;
-  --bg-card-hover: #334155;
+  --bg-primary: #000000;
+  --bg-secondary: #111111;
+  --bg-card: #161616;
+  --bg-card-hover: #1f1f1f;
 
   /* Brand Colors */
-  --primary: #0EA5E9;
-  --primary-light: #38BDF8;
-  --primary-dark: #0284C7;
+  --primary: #FFBF00;
+  --primary-light: #FFD040;
+  --primary-dark: #CC9900;
   --secondary: #10B981;
   --secondary-light: #34D399;
   --secondary-dark: #059669;
@@ -32,9 +32,9 @@
   --accent-yellow-dark: #D97706;
 
   /* Gradient */
-  --gradient-primary: linear-gradient(135deg, #0EA5E9 0%, #06B6D4 100%);
-  --gradient-secondary: linear-gradient(135deg, #10B981 0%, #0EA5E9 100%);
-  --gradient-subtle: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);
+  --gradient-primary: linear-gradient(135deg, #FFBF00 0%, #FFD700 100%);
+  --gradient-secondary: linear-gradient(135deg, #10B981 0%, #FFBF00 100%);
+  --gradient-subtle: linear-gradient(135deg, rgba(255, 191, 0, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);
 
   /* Text Colors */
   --text-primary: #F1F5F9;
@@ -67,9 +67,9 @@
   --bg-card-hover: #F8FAFC;
 
   /* Brand Colors */
-  --primary: #0EA5E9;
-  --primary-light: #38BDF8;
-  --primary-dark: #0284C7;
+  --primary: #FFBF00;
+  --primary-light: #FFD040;
+  --primary-dark: #CC9900;
   --secondary: #10B981;
   --secondary-light: #34D399;
   --secondary-dark: #059669;
@@ -80,9 +80,9 @@
   --accent-yellow-dark: #D97706;
 
   /* Gradient */
-  --gradient-primary: linear-gradient(135deg, #0EA5E9 0%, #06B6D4 100%);
-  --gradient-secondary: linear-gradient(135deg, #10B981 0%, #0EA5E9 100%);
-  --gradient-subtle: linear-gradient(135deg, rgba(14, 165, 233, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%);
+  --gradient-primary: linear-gradient(135deg, #FFBF00 0%, #FFD700 100%);
+  --gradient-secondary: linear-gradient(135deg, #10B981 0%, #FFBF00 100%);
+  --gradient-subtle: linear-gradient(135deg, rgba(255, 191, 0, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);
 
   /* Text Colors */
   --text-primary: #0F172A;
@@ -145,11 +145,27 @@ body {
 .header-content h1 {
   font-size: 1.75rem;
   font-weight: 700;
-  background: var(--gradient-primary);
+  color: transparent;
+  /* Hide text color to show background */
+  background: linear-gradient(110deg, #FFBF00 20%, #FFFFFF 45%, #FFBF00 55%, #FFBF00 100%);
+  background-size: 200% 100%;
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
   background-clip: text;
+  animation: electricity-flow 3s linear infinite;
+  text-shadow: 0 0 10px rgba(255, 191, 0, 0.3);
   letter-spacing: -0.025em;
+  position: relative;
+  display: inline-block;
+}
+
+@keyframes electricity-flow {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .subtitle {
