@@ -1,5 +1,7 @@
 import random
+import time
 from datetime import datetime
+from sqlalchemy.exc import OperationalError
 from app.models import db, Room, Timetable, EnergyLog, EnergySource, GridStatus
 from app.optimization.optimizer import EnergyOptimizer
 
@@ -124,8 +126,9 @@ class IoTSimulator:
         
         logs_created = 0
         optimizations_applied = 0
+        batch_size = 100  # Commit in batches to reduce lock contention
         
-        for room in rooms:
+        for idx, room in enumerate(rooms):
             # Generate random temperature (24-36°C)
             temperature = round(random.uniform(24, 36), 1)
             
@@ -157,8 +160,30 @@ class IoTSimulator:
             
             db.session.add(energy_log)
             logs_created += 1
+            
+            # Commit in batches to reduce lock contention
+            if (idx + 1) % batch_size == 0:
+                IoTSimulator._commit_with_retry()
         
-        db.session.commit()
+        # Final commit for remaining logs
+        IoTSimulator._commit_with_retry()
         
         print(f" Simulated {logs_created} rooms | Optimized {optimizations_applied} rooms at {current_time.strftime('%H:%M:%S')}")
         return logs_created, optimizations_applied
+    
+    @staticmethod
+    def _commit_with_retry(max_retries=3, initial_wait=0.1):
+        """Commit database session with retry logic for lock errors"""
+        for attempt in range(max_retries):
+            try:
+                db.session.commit()
+                return True
+            except OperationalError as e:
+                if "database is locked" in str(e) and attempt < max_retries - 1:
+                    wait_time = initial_wait * (2 ** attempt)  # Exponential backoff
+                    time.sleep(wait_time)
+                    db.session.rollback()
+                else:
+                    db.session.rollback()
+                    raise
+        return False
