@@ -106,7 +106,7 @@ function AnalyticsCharts() {
       <div className="card">
         <div className="card-header">
           <h2 className="card-title">
-            <span style={{ fontSize: '1.25rem' }}>📊</span>
+
             Hourly Energy Consumption
           </h2>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -164,7 +164,7 @@ function AnalyticsCharts() {
       <div className="card" style={{ marginTop: '1.5rem' }}>
         <div className="card-header">
           <h2 className="card-title">
-            <span style={{ fontSize: '1.25rem' }}>📈</span>
+
             Daily Energy Summary
           </h2>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -194,7 +194,7 @@ function AnalyticsCharts() {
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
               <XAxis dataKey="date" stroke="var(--text-muted)" tick={{ fontSize: 12, fill: 'var(--text-muted)' }} />
               <YAxis stroke="var(--text-muted)" tick={{ fontSize: 12, fill: 'var(--text-muted)' }} />
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }} />
               <Legend wrapperStyle={{ color: 'var(--text-secondary)', paddingTop: '1rem' }} />
               <Bar dataKey="consumption" fill="#10B981" name="Total Consumption (kWh)" radius={[4, 4, 0, 0]} />
               <Bar dataKey="peakLoad" fill="#0EA5E9" name="Peak Load (kW)" radius={[4, 4, 0, 0]} />
@@ -207,7 +207,7 @@ function AnalyticsCharts() {
       <div className="card" style={{ marginTop: '1.5rem' }}>
         <div className="card-header">
           <h2 className="card-title">
-            <span style={{ fontSize: '1.25rem' }}>🏫</span>
+
             Campus Load History
           </h2>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -236,7 +236,7 @@ function AnalyticsCharts() {
               <Legend wrapperStyle={{ color: 'var(--text-secondary)', paddingTop: '1rem' }} />
               <Line yAxisId="left" type="monotone" dataKey="load" stroke="#0EA5E9" strokeWidth={2} name="Total Load (kW)" dot={false} />
               <Line yAxisId="right" type="monotone" dataKey="temperature" stroke="#F59E0B" strokeWidth={2} name="Avg Temp (°C)" dot={false} />
-              <Line yAxisId="right" type="monotone" dataKey="occupied" stroke="#10B981" strokeWidth={2} name="Occupied Rooms" dot={false} />
+              <Line yAxisId="right" type="monotone" dataKey="occupied" stroke="#8B5CF6" strokeWidth={2} name="Occupied Rooms" dot={false} />
               <Line yAxisId="right" type="monotone" dataKey="optimized" stroke="#34D399" strokeWidth={2} name="Optimized Rooms" dot={false} />
             </LineChart>
           </ResponsiveContainer>

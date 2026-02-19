@@ -12,6 +12,7 @@ function EnergyFlowDiagram() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+    const [energySources, setEnergySources] = useState([]);
 
     const containerRef = useRef(null);
 
@@ -53,6 +54,7 @@ function EnergyFlowDiagram() {
 
     useEffect(() => {
         fetchBuildings();
+        fetchEnergySources();
     }, []);
 
     // Poll for Building Data
@@ -96,6 +98,15 @@ function EnergyFlowDiagram() {
             setEnergyFlow(response.data.data);
         } catch (err) {
             console.error('Failed to load energy flow:', err);
+        }
+    };
+
+    const fetchEnergySources = async () => {
+        try {
+            const response = await dashboardAPI.getEnergySources();
+            setEnergySources(response.data.data);
+        } catch (err) {
+            console.error('Failed to load energy sources:', err);
         }
     };
 
@@ -173,9 +184,13 @@ function EnergyFlowDiagram() {
         if (selectedBuilding) setActiveFloorIndex(0);
     }, [selectedBuilding]);
 
-    const getSourceColor = (source) => {
-        const s = (source || '').toLowerCase();
-        return SOURCE_COLORS[s] || '#ff00ff'; // Fallback to Magenta for debugging
+    const getSourceColor = (sourceName) => {
+        if (!sourceName) return '#ccc';
+        const source = energySources.find(s => s.name.toLowerCase() === sourceName.toLowerCase());
+        // Fallback to hardcoded colors if API data doesn't have color info (it might not)
+        // Or if we want to keep using the CSS variables mapping
+        const s = sourceName.toLowerCase();
+        return SOURCE_COLORS[s] || '#ff00ff';
     };
 
     if (loading) return <div className="loading">Loading diagram...</div>;
@@ -202,11 +217,32 @@ function EnergyFlowDiagram() {
     const rBuilding = minDim * 0.19;
 
 
-    const sourceNodes = [
-        { id: 'grid', label: 'Grid', color: SOURCE_COLORS.grid, icon: '⚡', xOffset: -90 },
-        { id: 'solar', label: 'Solar', color: SOURCE_COLORS.solar, icon: '☀️', xOffset: 0 },
-        { id: 'diesel', label: 'Diesel', color: SOURCE_COLORS.diesel, icon: '🛢️', xOffset: 90 }
-    ];
+    // Calculate source nodes dynamically
+    const sourceNodes = energySources.map((source, index) => {
+        // Simple mapping for icons based on name
+        let icon = '⚡';
+        const name = source.name.toLowerCase();
+        if (name.includes('solar')) icon = '☀️';
+        if (name.includes('diesel') || name.includes('generator')) icon = '🛢️';
+        if (name.includes('grid')) icon = '⚡';
+
+        // Calculate offset to center them
+        // Total width approx = (count-1) * spacing
+        // Start = -totalWidth / 2
+        // spacing = 90
+        const spacing = 90;
+        const totalWidth = (energySources.length - 1) * spacing;
+        const startX = -totalWidth / 2;
+        const xOffset = startX + (index * spacing);
+
+        return {
+            id: name, // Use name as ID for matching
+            label: source.name,
+            color: SOURCE_COLORS[name] || '#999',
+            icon: icon,
+            xOffset: xOffset
+        };
+    });
 
     // Group buildings
     const groupedBuildings = buildings.reduce((acc, b) => {
@@ -218,10 +254,8 @@ function EnergyFlowDiagram() {
         // Aggregate actual active sources from buildings
         if (b.active_sources && b.active_sources.length > 0) {
             b.active_sources.forEach(s => acc[fac].sources.add(s));
-        } else {
-            // Fallback if API hasn't updated or data is missing
-            acc[fac].sources.add('grid');
         }
+        // REMOVED FALLBACK: If no active sources, we show nothing.
 
         return acc;
     }, {});
@@ -279,7 +313,7 @@ function EnergyFlowDiagram() {
             // Multi-Line Connection Logic - Use specific building sources
             const buildingSources = b.active_sources && b.active_sources.length > 0
                 ? b.active_sources
-                : ['grid'];
+                : []; // No fallback to grid
 
             const totalLinkWidth = (buildingSources.length - 1) * 4; // 4px spacing
 

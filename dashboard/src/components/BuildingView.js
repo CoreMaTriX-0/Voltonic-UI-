@@ -10,10 +10,10 @@ function BuildingView() {
 
   useEffect(() => {
     fetchBuildings();
-    
+
     // Auto-refresh every 5 seconds
     const interval = setInterval(fetchBuildings, 5000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -66,7 +66,7 @@ function BuildingView() {
       <div className="card">
         <div className="card-header">
           <h2 className="card-title">
-            <span style={{ fontSize: '1.25rem' }}>🏢</span>
+
             Building Energy Consumption
           </h2>
           <span className="badge info">{buildings.length} Buildings</span>
@@ -79,11 +79,11 @@ function BuildingView() {
           ) : (
             <div className="grid-3">
               {sortedBuildings.map((building, index) => (
-                <div 
-                  key={building.building_id || index} 
+                <div
+                  key={building.building_id || index}
                   className="card"
                   onClick={() => setSelectedBuilding(building.building_id)}
-                  style={{ 
+                  style={{
                     cursor: 'pointer',
                     borderLeft: index < 3 ? '3px solid var(--accent-yellow)' : '3px solid var(--accent-green)'
                   }}
@@ -135,10 +135,10 @@ function BuildingView() {
         <div className="card" style={{ marginTop: '1.5rem' }}>
           <div className="card-header">
             <h2 className="card-title">
-              <span style={{ fontSize: '1.25rem' }}>📊</span>
+
               {buildingDetails.building_name || `Building ${selectedBuilding}`}
             </h2>
-            <button 
+            <button
               className="btn btn-secondary"
               onClick={() => setSelectedBuilding(null)}
             >
